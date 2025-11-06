@@ -1,81 +1,46 @@
-# LinkedIn Profile Scraper 🔍# Tab Title Picker 🏷️
+# LinkedIn Profile Scraper 🔍
 
-
-
-> A full-stack Chrome extension that automatically scrapes LinkedIn profiles and stores data in a database via Node.js backend.> A minimal Chrome extension that displays the current tab's title with a single click.
-
-
-
-------
-
-
-
-## 🎯 Project Overview## ✨ Features
-
-
-
-This project consists of:✅ Clean, minimal interface  
-
-- **Chrome Extension** - Automatically opens LinkedIn profiles and scrapes data✅ One-click tab title display  
-
-- **Node.js Backend** - Express API with Sequelize ORM to store profile data✅ Built with Manifest V3  
-
-- **SQLite Database** - Stores all scraped LinkedIn profile information✅ No external dependencies  
-
-
-
-## ✨ Features## 🚀 Installation
-
-
-
-✅ Bulk LinkedIn profile scraping (paste multiple URLs)  1. Open Chrome and navigate to `chrome://extensions/`
-
-✅ Automatic tab management (opens one profile at a time)  2. Enable **Developer mode** (top-right toggle)
-
-✅ Extracts: Name, Bio, Location, About, Followers, Connections  3. Click **Load unpacked** and select this folder
-
-✅ RESTful API for data storage and retrieval  4. Click the extension icon and press the button to see the current tab's title
-
-✅ SQLite database with Sequelize ORM  
-
-## 📂 Project Structure
+> A full-stack Chrome extension that automatically scrapes LinkedIn profiles and stores data in a database via Node.js backend.
 
 ---
 
+## 🎯 Project Overview
+
+This project consists of:
+- **Chrome Extension** - Automatically opens LinkedIn profiles and scrapes data
+- **Node.js Backend** - Express API with Sequelize ORM to store profile data
+- **SQLite Database** - Stores all scraped LinkedIn profile information
+
+## ✨ Features
+
+✅ Bulk LinkedIn profile scraping (paste multiple URLs)  
+✅ Automatic tab management (opens one profile at a time)  
+✅ Extracts: Name, Bio, Location, About, Followers, Connections  
+✅ RESTful API for data storage and retrieval  
+✅ SQLite database with Sequelize ORM  
+✅ Desktop notifications on completion  
+✅ Dashboard UI for viewing scraped profiles  
+
+---
+
+## 📂 Project Structure
+
 ```
-
-## 📂 Project Structure├── manifest.json    # Extension configuration
-
-├── popup.html       # Popup interface
-
-```├── popup.css        # Minimal styling
-
-banao-task1/└── popup.js         # Tab title retrieval logic
-
-├── manifest.json           # Extension manifest (Manifest V3)```
-
+banao-task1/
+├── manifest.json           # Extension manifest (Manifest V3)
 ├── popup.html              # Extension popup UI
-
-├── popup.css               # Popup styling## 🛠️ Tech Stack
-
+├── popup.css               # Popup styling
 ├── popup.js                # Popup logic
-
-├── background.js           # Background service worker- **HTML5** • **CSS3** • **JavaScript (ES6)**
-
-├── contentScript.js        # LinkedIn page scraper- **Chrome Extension API** (Manifest V3)
-
+├── background.js           # Background service worker
+├── contentScript.js        # LinkedIn page scraper
 └── backend/
-
-    ├── app.js              # Express server---
-
+    ├── app.js              # Express server
     ├── package.json        # Node dependencies
-
-    ├── config/<div align="center">
-
-    │   └── database.js     # Sequelize config  <sub>Built as part of Interview task submission</sub>
-
-    ├── models/</div>
-
+    ├── cleanup.js          # Database cleanup utility
+    ├── dashboard.html      # Profile viewer UI
+    ├── config/
+    │   └── database.js     # Sequelize config
+    ├── models/
     │   └── Profile.js      # Profile model
     └── routes/
         └── profileRoutes.js # API routes
@@ -119,7 +84,7 @@ npm start
 
 ### Step 3: Use the Extension
 1. Click the extension icon in Chrome toolbar
-2. Paste at least **3 LinkedIn profile URLs** (one per line)
+2. Paste LinkedIn profile URLs (one per line)
    ```
    https://www.linkedin.com/in/username1
    https://www.linkedin.com/in/username2
@@ -128,14 +93,17 @@ npm start
 3. Click **"Start Scraping"**
 4. Watch as tabs open automatically, data is scraped, and sent to the backend
 5. Each tab closes after successful scraping
+6. Get notification when complete!
 
 ### Step 4: View Stored Data
+
+**Option 1: Dashboard (Recommended)**
+Visit `http://localhost:3000/dashboard` for a beautiful UI
+
+**Option 2: API**
 ```powershell
-# Get all profiles
 curl http://localhost:3000/api/profiles
 ```
-
-Or visit `http://localhost:3000/api/profiles` in your browser
 
 ---
 
@@ -147,6 +115,7 @@ Or visit `http://localhost:3000/api/profiles` in your browser
 | `GET` | `/api/profiles` | Get all profiles |
 | `GET` | `/api/profiles/:id` | Get single profile |
 | `DELETE` | `/api/profiles/:id` | Delete a profile |
+| `DELETE` | `/api/profiles/cleanup/errors` | Delete all error profiles |
 
 ### Example POST Request Body:
 ```json
@@ -168,7 +137,7 @@ Or visit `http://localhost:3000/api/profiles` in your browser
 ### Chrome Extension
 - **Manifest V3**
 - **HTML5** / **CSS3** / **JavaScript (ES6)**
-- Chrome Extension APIs: `tabs`, `scripting`, `runtime`
+- Chrome Extension APIs: `tabs`, `scripting`, `runtime`, `notifications`
 
 ### Backend
 - **Node.js** + **Express.js**
@@ -181,7 +150,7 @@ Or visit `http://localhost:3000/api/profiles` in your browser
 ## ⚠️ Important Notes
 
 1. **LinkedIn Login Required**: You must be logged into LinkedIn for scraping to work
-2. **Rate Limiting**: The extension waits 2 seconds between profiles to avoid rate limits
+2. **Rate Limiting**: The extension waits between profiles to avoid rate limits
 3. **LinkedIn's Terms**: This is for educational purposes only. Review LinkedIn's Terms of Service before scraping
 4. **Data Accuracy**: Some fields may be empty if the profile structure differs or elements are not loaded
 
@@ -189,14 +158,16 @@ Or visit `http://localhost:3000/api/profiles` in your browser
 
 ## 🧪 Testing Checklist
 
-- [ ] Backend starts on port 3000
-- [ ] Extension loads without errors
-- [ ] Can paste 3+ LinkedIn URLs
-- [ ] Tabs open automatically
-- [ ] Content script extracts data correctly
-- [ ] POST requests reach backend successfully
-- [ ] Database stores profiles
-- [ ] GET `/api/profiles` returns saved data
+- [x] Backend starts on port 3000
+- [x] Extension loads without errors
+- [x] Can paste LinkedIn URLs (1 or more)
+- [x] Tabs open automatically
+- [x] Content script extracts data correctly
+- [x] POST requests reach backend successfully
+- [x] Database stores profiles
+- [x] GET `/api/profiles` returns saved data
+- [x] Desktop notification on completion
+- [x] Dashboard displays profiles beautifully
 
 ---
 
@@ -209,7 +180,28 @@ Record a 5-minute video showing:
 4. ✅ Pasting profile URLs in the extension
 5. ✅ Watching tabs open and scrape automatically
 6. ✅ Checking backend console for POST requests
-7. ✅ Viewing database results via `/api/profiles`
+7. ✅ Viewing dashboard at `/dashboard`
+8. ✅ Showing scraped profiles with full data
+
+---
+
+## 🎓 Project Evolution
+
+This project evolved from a simple Tab Title Picker to a full-stack LinkedIn Profile Scraper:
+
+**Key Upgrades:**
+- Upgraded from Tab Title Picker to full LinkedIn scraper
+- Chrome extension automatically opens LinkedIn profiles and scrapes data
+- Extracts: Name, Bio, Location, About, Followers, Connections
+- Node.js backend with Express + Sequelize + SQLite
+- RESTful API endpoints for profile storage and retrieval
+- Background service worker for automated tab management
+- Content script for LinkedIn page scraping
+- Dashboard UI for viewing scraped profiles
+- Notifications on completion
+- Error handling and cleanup functionality
+
+**Interview Task Submission** - Task 2
 
 ---
 
