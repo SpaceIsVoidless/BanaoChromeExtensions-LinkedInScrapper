@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Profiles - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0a66c2;
+            margin-bottom: 20px;
+        }
+        .actions {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            background: #0a66c2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #004182;
+        }
+        button.danger {
+            background: #d32f2f;
+        }
+        button.danger:hover {
+            background: #b71c1c;
+        }
+        .profile-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.2s;
+        }
+        .profile-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+        .profile-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .profile-bio {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .profile-location {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .profile-about {
+            color: #444;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .profile-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .stat {
+            font-size: 13px;
+            color: #666;
+        }
+        .stat strong {
+            color: #0a66c2;
+        }
+        .profile-url {
+            font-size: 12px;
+            color: #0a66c2;
+            text-decoration: none;
+        }
+        .profile-url:hover {
+            text-decoration: underline;
+        }
+        .error-profile {
+            background: #ffebee;
+            border-color: #ef5350;
+        }
+        .count {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 LinkedIn Profiles Dashboard</h1>
+        <div class="count" id="count">Loading...</div>
+        <div class="actions">
+            <button onclick="loadProfiles()">🔄 Refresh</button>
+            <button class="danger" onclick="cleanupErrors()">🗑️ Delete Error Profiles</button>
+        </div>
+        <div id="profiles" class="loading">Loading profiles...</div>
+    </div>
+
+    <script>
+        async function loadProfiles() {
+            try {
+                document.getElementById('profiles').innerHTML = '<div class="loading">Loading profiles...</div>';
+                const response = await fetch('http://localhost:3000/api/profiles');
+                const data = await response.json();
+                
+                document.getElementById('count').textContent = `Total Profiles: ${data.count}`;
+                
+                if (data.profiles.length === 0) {
+                    document.getElementById('profiles').innerHTML = '<div class="loading">No profiles found</div>';
+                    return;
+                }
+                
+                const profilesHtml = data.profiles.map(profile => {
+                    const isError = profile.name === 'Error' || profile.name === 'Scraping Error' || profile.name === 'Unknown User';
+                    return `
+                        <div class="profile-card ${isError ? 'error-profile' : ''}">
+                            <div class="profile-header">
+                                <div>
+                                    <div class="profile-name">${profile.name}</div>
+                                    <div class="profile-bio">${profile.bio || 'No bio available'}</div>
+                                    <div class="profile-location">${profile.location || 'Location not specified'}</div>
+                                </div>
+                            </div>
+                            ${profile.about ? `<div class="profile-about">${profile.about}</div>` : ''}
+                            <div class="profile-stats">
+                                <div class="stat"><strong>${profile.follower_count.toLocaleString()}</strong> followers</div>
+                                <div class="stat"><strong>${profile.connection_count}</strong> connections</div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <a href="${profile.url}" target="_blank" class="profile-url">${profile.url}</a>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 11px; color: #999;">
+                                Scraped: ${new Date(profile.createdAt).toLocaleString()}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('profiles').innerHTML = profilesHtml;
+            } catch (error) {
+                document.getElementById('profiles').innerHTML = `<div class="loading">Error loading profiles: ${error.message}</div>`;
+            }
+        }
+        
+        async function cleanupErrors() {
+            if (!confirm('Are you sure you want to delete all error profiles?')) return;
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/profiles/cleanup/errors', {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                alert(`Deleted ${data.deletedCount} error profiles`);
+                loadProfiles();
+            } catch (error) {
+                alert('Error cleaning up profiles: ' + error.message);
+            }
+        }
+        
+        loadProfiles();
+    </script>
+</body>
+</html>

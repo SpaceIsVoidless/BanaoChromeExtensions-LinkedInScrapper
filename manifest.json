@@ -1,11 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Tab Title Picker",
-  "version": "1.0",
-  "description": "Shows the current tab's title in the popup when you click the button.",
-  "permissions": ["tabs"],
+  "name": "LinkedIn Profile Scraper",
+  "version": "2.0",
+  "description": "Automatically scrapes LinkedIn profile data and sends to backend API.",
+  "permissions": ["tabs", "scripting", "activeTab", "notifications"],
+  "host_permissions": ["https://www.linkedin.com/*", "http://localhost:3000/*"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Show Tab Title"
+    "default_title": "LinkedIn Scraper"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }

@@ -3,16 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tab Title Picker</title>
+    <title>LinkedIn Profile Scraper</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <h1>Tab Title Picker</h1>
-    <button id="getTitle">Get Current Tab Title</button>
-    <div id="titleContainer">
-      <div id="titleLabel">Tab Title:</div>
-      <div id="title" aria-live="polite"></div>
+    <h1>LinkedIn Profile Scraper</h1>
+    
+    <div class="instructions">
+      <p>Paste LinkedIn profile URLs (one per line):</p>
     </div>
+    
+    <textarea id="urlInput" placeholder="https://www.linkedin.com/in/username1
+https://www.linkedin.com/in/username2
+https://www.linkedin.com/in/username3" rows="6"></textarea>
+    
+    <button id="startScraping">Start Scraping</button>
+    
+    <div id="status"></div>
+    
     <script src="popup.js"></script>
   </body>
 </html>

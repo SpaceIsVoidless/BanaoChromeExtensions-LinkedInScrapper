@@ -8,7 +8,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   background: #ffffff;
   color: #1a1a1a;
-  min-width: 300px;
+  min-width: 400px;
   padding: 20px;
 }
 
@@ -19,53 +19,82 @@ h1 {
   color: #1a1a1a;
 }
 
+.instructions {
+  margin-bottom: 8px;
+}
+
+.instructions p {
+  font-size: 12px;
+  color: #666666;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 12px;
+  font-family: monospace;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
 button {
-  background-color: #1a1a1a;
+  background-color: #0a66c2;
   color: #ffffff;
   border: none;
   border-radius: 4px;
   padding: 10px 16px;
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
   width: 100%;
 }
 
 button:hover {
-  background-color: #333333;
+  background-color: #004182;
 }
 
 button:active {
-  background-color: #000000;
+  background-color: #003366;
 }
 
-#titleContainer {
-  margin-top: 16px;
-  padding: 12px;
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+#status {
+  margin-top: 12px;
+  padding: 10px;
   background-color: #f5f5f5;
   border-radius: 4px;
-  min-height: 50px;
+  font-size: 12px;
+  min-height: 40px;
+  display: none;
 }
 
-#titleLabel {
-  font-size: 11px;
-  font-weight: 500;
-  color: #666666;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+#status.show {
+  display: block;
 }
 
-#title {
-  font-size: 13px;
-  line-height: 1.5;
-  word-break: break-word;
-  color: #1a1a1a;
+#status.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
 }
 
-#title:empty::before {
-  content: 'No title yet';
-  color: #999999;
-  font-style: italic;
+#status.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+#status.processing {
+  background-color: #e3f2fd;
+  color: #1565c0;
 }

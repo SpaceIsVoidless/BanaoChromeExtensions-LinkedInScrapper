@@ -9,5 +9,16 @@ Thumbs.db
 *.swo
 *~
 
-# Node modules (if you add any build tools later)
+# Node modules
 node_modules/
+
+# Database files
+*.sqlite
+*.db
+
+# Environment files
+.env
+
+# Logs
+*.log
+npm-debug.log*
