@@ -101,4 +101,19 @@ router.delete('/profiles/cleanup/errors', async (req, res) => {
   }
 });
 
+router.delete('/profiles/all', async (req, res) => {
+  try {
+    const deleted = await Profile.destroy({
+      where: {},
+      truncate: true
+    });
+    res.json({ 
+      message: 'All profiles deleted',
+      deletedCount: deleted 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

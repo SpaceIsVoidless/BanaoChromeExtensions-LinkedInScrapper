@@ -26,19 +26,6 @@ async function waitForFeedLoad() {
   return false;
 }
 
-async function loadAllPosts(needed) {
-  console.log("Loading", needed, "posts...");
-  const scrollTimes = Math.ceil(needed / 3);
-  for (let i = 0; i < scrollTimes; i++) {
-    window.scrollBy({ top: 600, behavior: "smooth" });
-    await wait(2000);
-  }
-  await wait(2000);
-  const total = document.querySelectorAll(".feed-shared-update-v2").length;
-  console.log("Loaded", total, "posts");
-  return total;
-}
-
 function scrollToPost(post) {
   const rect = post.getBoundingClientRect();
   if (rect.top < 0 || rect.bottom > window.innerHeight) {
@@ -47,226 +34,148 @@ function scrollToPost(post) {
   }
 }
 
-async function likePost(post, postNum) {
-  try {
-    console.log("LIKE", likesCompleted + 1, "/", TARGET_LIKES, "- Post", postNum);
-    scrollToPost(post);
-    await wait(1500);
-    
-    const likeBtn = post.querySelector("button[aria-label*=React]") || post.querySelector("button[aria-label*=Like]");
-    if (!likeBtn) {
-      console.log("Post", postNum, "- No like button");
-      return false;
-    }
-    
-    if (likeBtn.getAttribute("aria-pressed") === "true") {
-      console.log("Post", postNum, "- Already liked, skipping");
-      return false;
-    }
-    
-    likeBtn.click();
-    await wait(1200);
-    console.log("SUCCESS: Liked post", postNum);
-    return true;
-  } catch (err) {
-    console.log("Post", postNum, "- Error:", err.message);
-    return false;
-  }
-}
-
-async function commentOnPost(post, postNum) {
-  try {
-    console.log("COMMENT", commentsCompleted + 1, "/", TARGET_COMMENTS, "- Post", postNum);
-    scrollToPost(post);
-    await wait(1500);
-    
-    const commentBtn = post.querySelector("button[aria-label*=Comment]");
-    if (!commentBtn) {
-      console.log("Post", postNum, "- No comment button");
-      return false;
-    }
-    
-    commentBtn.click();
-    console.log("Post", postNum, "- Clicked comment button");
-    await wait(3000);
-    
-    // Find the comment box WITHIN the post's comment section
-    let commentBox = post.querySelector(".ql-editor[contenteditable=true]");
-    
-    // If not found in post, find the nearest one after the post
-    if (!commentBox) {
-      const allBoxes = document.querySelectorAll(".ql-editor[contenteditable=true]");
-      for (const box of allBoxes) {
-        const boxRect = box.getBoundingClientRect();
-        const postRect = post.getBoundingClientRect();
-        if (box.offsetParent !== null && boxRect.height > 0 && boxRect.top > postRect.top) {
-          commentBox = box;
-          break;
-        }
-      }
-    }
-    
-    if (!commentBox || commentBox.offsetParent === null) {
-      console.log("Post", postNum, "- Comment box not visible");
-      return false;
-    }
-    
-    console.log("Post", postNum, "- Found comment box, typing...");
-    commentBox.innerHTML = "";
-    commentBox.focus();
-    await wait(500);
-    
-    commentBox.textContent = "Great insights! Thanks for sharing.";
-    commentBox.dispatchEvent(new Event("input", { bubbles: true }));
-    commentBox.dispatchEvent(new Event("change", { bubbles: true }));
-    
-    await wait(2500);
-    
-    // Find submit button that's NEAR this comment box
-    let submitBtn = null;
-    const allSubmitBtns = document.querySelectorAll("button.comments-comment-box__submit-button:not([disabled])");
-    
-    for (const btn of allSubmitBtns) {
-      const btnRect = btn.getBoundingClientRect();
-      const boxRect = commentBox.getBoundingClientRect();
-      // Submit button should be close to comment box (within 200px)
-      if (Math.abs(btnRect.top - boxRect.top) < 200 && !btn.disabled) {
-        submitBtn = btn;
-        break;
-      }
-    }
-    
-    if (!submitBtn) {
-      console.log("Post", postNum, "- Submit button not found or disabled");
-      console.log("Comment box text:", commentBox.textContent);
-      return false;
-    }
-    
-    console.log("Post", postNum, "- Clicking submit...");
-    submitBtn.click();
-    await wait(3000);
-    
-    console.log("SUCCESS: Commented on post", postNum);
-    return true;
-  } catch (err) {
-    console.log("Post", postNum, "- Error:", err.message);
-    return false;
-  }
-}
-
 async function runAutomation() {
   console.log("STARTING AUTOMATION");
   chrome.runtime.sendMessage({ action: "engagementProgress", message: "Starting..." });
-  
   await waitForFeedLoad();
   await wait(2000);
-  
-  const totalNeeded = Math.max(TARGET_LIKES, TARGET_COMMENTS) + 5;
-  await loadAllPosts(totalNeeded);
-  
-  console.log("Scrolling to top...");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  await wait(3000);
-  
-  const allPosts = Array.from(document.querySelectorAll(".feed-shared-update-v2"));
-  console.log("Total posts available:", allPosts.length);
-  
-  if (allPosts.length === 0) {
-    chrome.runtime.sendMessage({ action: "engagementComplete", likedCount: 0, commentedCount: 0 });
-    return;
-  }
-  
-  // PHASE 1: SELECT POSTS FOR LIKES
-  let postsToLike = [];
-  if (TARGET_LIKES > 0) {
-    console.log("\n=== SELECTING POSTS FOR LIKES ===");
-    chrome.runtime.sendMessage({ action: "engagementProgress", message: "Selecting posts to like..." });
-    
-    for (let i = 0; i < allPosts.length && postsToLike.length < TARGET_LIKES; i++) {
-      const post = allPosts[i];
+  console.log("Single-pass automation...");
+  let processedPosts = new Set();
+  let scrollAttempts = 0;
+  const maxScrolls = 30;
+  let noProgressCounter = 0;
+  while ((likesCompleted < TARGET_LIKES || commentsCompleted < TARGET_COMMENTS) && scrollAttempts < maxScrolls) {
+    const startLikes = likesCompleted;
+    const startComments = commentsCompleted;
+    const allPosts = Array.from(document.querySelectorAll(".feed-shared-update-v2"));
+    let foundNewPost = false;
+    console.log("Scan", scrollAttempts + 1, "| Posts:", allPosts.length, "| Likes:", likesCompleted + "/" + TARGET_LIKES, "| Comments:", commentsCompleted + "/" + TARGET_COMMENTS);
+    for (const post of allPosts) {
+      if (likesCompleted >= TARGET_LIKES && commentsCompleted >= TARGET_COMMENTS) break;
+      if (processedPosts.has(post)) continue;
+      processedPosts.add(post);
+      foundNewPost = true;
+      const postNum = processedPosts.size;
       scrollToPost(post);
-      await wait(800);
+      await wait(1000);
       
-      const likeBtn = post.querySelector("button[aria-label*=React]") || post.querySelector("button[aria-label*=Like]");
-      if (likeBtn && likeBtn.getAttribute("aria-pressed") !== "true") {
-        postsToLike.push({ post: post, index: i + 1 });
-        console.log("Selected post", i + 1, "for liking -", postsToLike.length, "/", TARGET_LIKES);
-      }
-    }
-    console.log("Selected", postsToLike.length, "posts for likes");
-  }
-  
-  // PHASE 2: SELECT POSTS FOR COMMENTS
-  let postsToComment = [];
-  if (TARGET_COMMENTS > 0) {
-    console.log("\n=== SELECTING POSTS FOR COMMENTS ===");
-    chrome.runtime.sendMessage({ action: "engagementProgress", message: "Selecting posts to comment..." });
-    
-    for (let i = 0; i < allPosts.length && postsToComment.length < TARGET_COMMENTS; i++) {
-      const post = allPosts[i];
-      scrollToPost(post);
-      await wait(800);
-      
-      const commentBtn = post.querySelector("button[aria-label*=Comment]");
-      if (commentBtn) {
-        postsToComment.push({ post: post, index: i + 1 });
-        console.log("Selected post", i + 1, "for commenting -", postsToComment.length, "/", TARGET_COMMENTS);
-      }
-    }
-    console.log("Selected", postsToComment.length, "posts for comments");
-  }
-  
-  // Scroll back to top
-  console.log("\nScrolling back to top...");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  await wait(3000);
-  
-  // PHASE 3: EXECUTE LIKES
-  if (postsToLike.length > 0) {
-    console.log("\n=== EXECUTING LIKES ===");
-    chrome.runtime.sendMessage({ action: "engagementProgress", message: "Starting likes..." });
-    
-    for (let i = 0; i < postsToLike.length; i++) {
-      const { post, index } = postsToLike[i];
-      const success = await likePost(post, index);
-      
-      if (success) {
-        likesCompleted++;
-        console.log("Liked post", index, "-", likesCompleted, "/", TARGET_LIKES);
-        chrome.runtime.sendMessage({ action: "engagementProgress", message: "Liked " + likesCompleted + "/" + TARGET_LIKES });
-        
-        if (i < postsToLike.length - 1) {
-          await wait(2000 + Math.random() * 2000);
+      if (likesCompleted < TARGET_LIKES) {
+        const likeBtn = post.querySelector("button[aria-label*=React]") || post.querySelector("button[aria-label*=Like]");
+        if (likeBtn && likeBtn.getAttribute("aria-pressed") !== "true") {
+          console.log("About to like post", postNum, "- current:", likesCompleted + "/" + TARGET_LIKES);
+          if (likesCompleted < TARGET_LIKES) {
+            likeBtn.click();
+            await wait(1000);
+            likesCompleted++;
+            console.log("LIKED post", postNum, "-", likesCompleted + "/" + TARGET_LIKES);
+            chrome.runtime.sendMessage({ action: "engagementProgress", message: "Liked " + likesCompleted + "/" + TARGET_LIKES });
+            await wait(1000 + Math.random() * 1000);
+          }
         }
+      } else {
+        console.log("Skipping like on post", postNum, "- already have", likesCompleted + "/" + TARGET_LIKES);
       }
-    }
-    console.log("Likes complete:", likesCompleted, "/", TARGET_LIKES);
-  }
-  
-  // PHASE 4: EXECUTE COMMENTS
-  if (postsToComment.length > 0) {
-    console.log("\n=== EXECUTING COMMENTS ===");
-    chrome.runtime.sendMessage({ action: "engagementProgress", message: "Starting comments..." });
-    
-    for (let i = 0; i < postsToComment.length; i++) {
-      const { post, index } = postsToComment[i];
-      const success = await commentOnPost(post, index);
       
-      if (success) {
-        commentsCompleted++;
-        console.log("Commented on post", index, "-", commentsCompleted, "/", TARGET_COMMENTS);
-        chrome.runtime.sendMessage({ action: "engagementProgress", message: "Commented " + commentsCompleted + "/" + TARGET_COMMENTS });
-        
-        if (i < postsToComment.length - 1) {
-          await wait(4000 + Math.random() * 3000);
+      if (commentsCompleted < TARGET_COMMENTS) {
+        const commentBtn = post.querySelector("button[aria-label*=Comment]");
+        if (commentBtn) {
+          console.log("About to comment on post", postNum, "- current:", commentsCompleted + "/" + TARGET_COMMENTS);
+          if (commentsCompleted < TARGET_COMMENTS) {
+            console.log("Clicking comment button on post", postNum);
+            commentBtn.click();
+            await wait(3000);
+            let commentBox = post.querySelector(".ql-editor[contenteditable=true]");
+            if (!commentBox) {
+              const allBoxes = document.querySelectorAll(".ql-editor[contenteditable=true]");
+              for (const box of allBoxes) {
+                if (box.offsetParent !== null && box.getBoundingClientRect().height > 0) {
+                  commentBox = box;
+                  break;
+                }
+              }
+            }
+            console.log("Comment box found:", !!commentBox);
+            if (commentBox && commentBox.offsetParent !== null) {
+              commentBox.innerHTML = "";
+              commentBox.focus();
+              await wait(400);
+              commentBox.innerHTML = "<p>Great insights! Thanks for sharing.</p>";
+              commentBox.dispatchEvent(new Event("input", { bubbles: true }));
+              commentBox.dispatchEvent(new Event("change", { bubbles: true }));
+              await wait(2000);
+              
+              const commentContainer = commentBox.closest('.comments-comment-box') || commentBox.closest('form');
+              let submitBtn = null;
+              
+              if (commentContainer) {
+                const buttons = commentContainer.querySelectorAll('button');
+                for (const btn of buttons) {
+                  const text = btn.innerText || btn.textContent;
+                  if (text && text.trim() === "Comment" && !btn.disabled && btn.offsetParent !== null) {
+                    submitBtn = btn;
+                    console.log("Found Comment button with text:", text);
+                    break;
+                  }
+                }
+              }
+              
+              if (!submitBtn) {
+                const allButtons = document.querySelectorAll('button');
+                for (const btn of allButtons) {
+                  const text = btn.innerText || btn.textContent;
+                  if (text && text.trim() === "Comment" && !btn.disabled && btn.offsetParent !== null) {
+                    const rect = btn.getBoundingClientRect();
+                    if (rect.width > 0 && rect.height > 0) {
+                      submitBtn = btn;
+                      console.log("Found Comment button globally");
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              console.log("Submit button found:", !!submitBtn, "| Disabled:", submitBtn ? submitBtn.disabled : "N/A");
+              if (submitBtn && !submitBtn.disabled) {
+                submitBtn.click();
+                console.log("Comment button CLICKED on post", postNum);
+                await wait(2500);
+                if (commentsCompleted < TARGET_COMMENTS) {
+                  commentsCompleted++;
+                  console.log("COMMENTED post", postNum, "-", commentsCompleted + "/" + TARGET_COMMENTS);
+                  chrome.runtime.sendMessage({ action: "engagementProgress", message: "Commented " + commentsCompleted + "/" + TARGET_COMMENTS });
+                  await wait(1500 + Math.random() * 1500);
+                }
+              } else {
+                console.log("SKIPPING - Comment button not found or disabled");
+              }
+            }
+          }
         }
+      } else {
+        console.log("Skipping comment on post", postNum, "- already have", commentsCompleted + "/" + TARGET_COMMENTS);
       }
     }
-    console.log("Comments complete:", commentsCompleted, "/", TARGET_COMMENTS);
+    if (likesCompleted === startLikes && commentsCompleted === startComments) {
+      noProgressCounter++;
+      console.log("No progress made, counter:", noProgressCounter);
+      if (noProgressCounter >= 5) {
+        console.log("Breaking - no progress after 5 attempts");
+        break;
+      }
+    } else {
+      noProgressCounter = 0;
+    }
+    if (likesCompleted >= TARGET_LIKES && commentsCompleted >= TARGET_COMMENTS) {
+      console.log("Breaking - targets reached!");
+      break;
+    }
+    scrollAttempts++;
+    if (!foundNewPost || (likesCompleted < TARGET_LIKES || commentsCompleted < TARGET_COMMENTS)) {
+      window.scrollBy({ top: 700, behavior: "smooth" });
+      await wait(2500);
+    }
   }
-  
-  console.log("\n=== AUTOMATION COMPLETE ===");
-  console.log("Final: Likes", likesCompleted, "/", TARGET_LIKES, "| Comments", commentsCompleted, "/", TARGET_COMMENTS);
+  console.log("COMPLETE - Likes:", likesCompleted + "/" + TARGET_LIKES, "Comments:", commentsCompleted + "/" + TARGET_COMMENTS);
   chrome.runtime.sendMessage({ action: "engagementComplete", likedCount: likesCompleted, commentedCount: commentsCompleted });
 }
 

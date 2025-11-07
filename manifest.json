@@ -3,7 +3,7 @@
   "name": "LinkedIn Scraper + Automator",
   "version": "2.0",
   "description": "Scrapes LinkedIn profiles and automates feed engagement.",
-  "permissions": ["tabs", "scripting", "activeTab", "notifications"],
+  "permissions": ["tabs", "scripting", "activeTab", "notifications", "storage"],
   "host_permissions": ["https://www.linkedin.com/*", "http://localhost:3000/*"],
   "action": {
     "default_popup": "popup.html",

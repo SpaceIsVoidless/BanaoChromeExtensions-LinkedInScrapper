@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const startEngagementButton = document.getElementById('startEngagement');
   const engagementStatusDiv = document.getElementById('engagementStatus');
 
-  // Profile Scraping Logic
   startButton.addEventListener('click', () => {
     const urls = urlInput.value
       .split('\n')
@@ -36,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   });
 
-  // Feed Engagement Logic
   function validateEngagementInputs() {
     const likeCount = parseInt(likeCountInput.value);
     const commentCount = parseInt(commentCountInput.value);
@@ -80,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   });
 
-  // Message listeners for progress updates
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'scrapingProgress') {
       showStatus(message.message, 'processing');

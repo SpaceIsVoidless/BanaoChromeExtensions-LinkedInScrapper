@@ -50,19 +50,19 @@ async function processNextUrl() {
   notifyPopup('scrapingProgress', `Opening: ${username} (${urlQueue.length + 1} remaining)`);
 
   try {
-    const tab = await chrome.tabs.create({ url: url, active: true });
+    const tab = await chrome.tabs.create({ url: url, active: false });
     currentTabId = tab.id;
     
-    await new Promise(resolve => setTimeout(resolve, 6000));
+    await new Promise(resolve => setTimeout(resolve, 15000));
     
     try {
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        files: ['contentScript.js']
+        files: ['smartScraper.js']
       });
-      console.log('Content script injected successfully for:', username);
+      console.log('Smart scraper injected successfully for:', username);
     } catch (error) {
-      console.error('Error injecting content script:', error);
+      console.error('Error injecting smart scraper:', error);
       notifyPopup('scrapingError', 'Failed to inject script: ' + error.message);
       chrome.tabs.remove(tab.id);
       processNextUrl();
@@ -104,11 +104,13 @@ async function handleScrapedData(data, tabId) {
     
     notifyPopup('scrapingProgress', `✓ Saved: ${data.name}`);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     chrome.tabs.remove(tabId);
     
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const randomDelay = 10000 + Math.random() * 5000;
+    console.log(`Waiting ${Math.round(randomDelay/1000)}s before next profile...`);
+    await new Promise(resolve => setTimeout(resolve, randomDelay));
     
     processNextUrl();
   } catch (error) {
@@ -142,7 +144,6 @@ async function startFeedEngagement() {
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     try {
-      // Inject config first, then the script
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: (config) => {

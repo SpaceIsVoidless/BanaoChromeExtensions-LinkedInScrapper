@@ -20,8 +20,9 @@ app.get('/', (req, res) => {
       'POST /api/profiles': 'Create a new profile',
       'GET /api/profiles': 'Get all profiles',
       'GET /api/profiles/:id': 'Get a single profile',
-      'DELETE /api/profiles/:id': 'Delete a profile',
-      'DELETE /api/profiles/cleanup/errors': 'Delete all error profiles'
+      'DELETE /api/profiles/:id': 'Delete a specific profile by ID',
+      'DELETE /api/profiles/cleanup/errors': 'Delete all Unknown User/Error profiles',
+      'DELETE /api/profiles/all': 'Delete ALL profiles (use with caution!)'
     },
     dashboard: 'Visit /dashboard to view profiles'
   });
