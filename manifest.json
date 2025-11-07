@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "LinkedIn Profile Scraper",
+  "name": "LinkedIn Scraper + Automator",
   "version": "2.0",
-  "description": "Automatically scrapes LinkedIn profile data and sends to backend API.",
+  "description": "Scrapes LinkedIn profiles and automates feed engagement.",
   "permissions": ["tabs", "scripting", "activeTab", "notifications"],
   "host_permissions": ["https://www.linkedin.com/*", "http://localhost:3000/*"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "LinkedIn Scraper"
+    "default_title": "LinkedIn Scraper + Automator"
   },
   "background": {
     "service_worker": "background.js"

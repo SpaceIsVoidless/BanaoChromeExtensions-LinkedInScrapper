@@ -13,8 +13,7 @@ function extractNumber(text) {
 
 async function scrapeProfile() {
   try {
-    console.log('Starting to scrape profile...');
-    
+    console.log('Starting profile scraping...');
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     let name = '';
@@ -27,10 +26,7 @@ async function scrapeProfile() {
     
     for (const selector of nameSelectors) {
       name = extractText(selector);
-      if (name && name.length > 2) {
-        console.log('Name found with selector:', selector, '=', name);
-        break;
-      }
+      if (name && name.length > 2) break;
     }
     
     let headline = '';
@@ -42,10 +38,7 @@ async function scrapeProfile() {
     
     for (const selector of headlineSelectors) {
       headline = extractText(selector);
-      if (headline && headline !== name && headline.length > 5) {
-        console.log('Headline found with selector:', selector, '=', headline);
-        break;
-      }
+      if (headline && headline !== name && headline.length > 5) break;
     }
 
     let location = '';
@@ -58,46 +51,37 @@ async function scrapeProfile() {
       const text = extractText(selector);
       if (text && !text.toLowerCase().includes('contact') && !text.toLowerCase().includes('connection') && text.length > 2) {
         location = text;
-        console.log('Location found with selector:', selector, '=', location);
         break;
       }
     }
 
     let about = '';
-    try {
-      const aboutSection = document.querySelector('#about');
-      if (aboutSection) {
-        const parentSection = aboutSection.closest('section');
-        if (parentSection) {
-          const aboutElements = parentSection.querySelectorAll('span');
-          for (const elem of aboutElements) {
-            const text = elem.textContent.trim();
-            if (text.length > 50 && !text.includes('About') && !text.includes('Show all')) {
-              about = text;
-              console.log('About found, length:', about.length);
-              break;
-            }
+    const aboutSection = document.querySelector('#about');
+    if (aboutSection) {
+      const parentSection = aboutSection.closest('section');
+      if (parentSection) {
+        const aboutElements = parentSection.querySelectorAll('span');
+        for (const elem of aboutElements) {
+          const text = elem.textContent.trim();
+          if (text.length > 50 && !text.includes('About') && !text.includes('Show all')) {
+            about = text;
+            break;
           }
         }
       }
-    } catch (e) {
-      console.log('Error finding about section:', e);
     }
 
     let followerCount = 0;
     let connectionCount = 0;
-    
     const allSpans = document.querySelectorAll('span.t-black--light, span.t-bold');
     
     for (const span of allSpans) {
       const text = span.textContent.trim();
       if (text.toLowerCase().includes('follower')) {
         followerCount = extractNumber(text);
-        console.log('Followers found:', followerCount, 'from text:', text);
       }
       if (text.toLowerCase().includes('connection')) {
         connectionCount = extractNumber(text);
-        console.log('Connections found:', connectionCount, 'from text:', text);
       }
     }
 
@@ -111,7 +95,7 @@ async function scrapeProfile() {
       connection_count: connectionCount
     };
 
-    console.log('Final scraped profile data:', profileData);
+    console.log('Profile scraped successfully:', profileData);
 
     chrome.runtime.sendMessage({
       action: 'profileScraped',
@@ -135,5 +119,4 @@ async function scrapeProfile() {
   }
 }
 
-console.log('Will start scraping in 2 seconds...');
 setTimeout(scrapeProfile, 2000);

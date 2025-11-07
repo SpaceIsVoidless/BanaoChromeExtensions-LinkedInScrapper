@@ -3,6 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const urlInput = document.getElementById('urlInput');
   const statusDiv = document.getElementById('status');
 
+  const likeCountInput = document.getElementById('likeCount');
+  const commentCountInput = document.getElementById('commentCount');
+  const startEngagementButton = document.getElementById('startEngagement');
+  const engagementStatusDiv = document.getElementById('engagementStatus');
+
+  // Profile Scraping Logic
   startButton.addEventListener('click', () => {
     const urls = urlInput.value
       .split('\n')
@@ -30,6 +36,51 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   });
 
+  // Feed Engagement Logic
+  function validateEngagementInputs() {
+    const likeCount = parseInt(likeCountInput.value);
+    const commentCount = parseInt(commentCountInput.value);
+    
+    const isValid = 
+      !isNaN(likeCount) && likeCount >= 0 && likeCount <= 50 &&
+      !isNaN(commentCount) && commentCount >= 0 && commentCount <= 20;
+    
+    startEngagementButton.disabled = !isValid;
+  }
+
+  likeCountInput.addEventListener('input', validateEngagementInputs);
+  commentCountInput.addEventListener('input', validateEngagementInputs);
+
+  startEngagementButton.addEventListener('click', () => {
+    const likeCount = parseInt(likeCountInput.value);
+    const commentCount = parseInt(commentCountInput.value);
+
+    if (isNaN(likeCount) || isNaN(commentCount)) {
+      showEngagementStatus('Please enter valid numbers', 'error');
+      return;
+    }
+
+    startEngagementButton.disabled = true;
+    showEngagementStatus(`Starting engagement: ${likeCount} likes, ${commentCount} comments...`, 'processing');
+
+    chrome.runtime.sendMessage(
+      { 
+        action: 'startEngagement', 
+        likeCount: likeCount,
+        commentCount: commentCount
+      },
+      (response) => {
+        if (response && response.success) {
+          showEngagementStatus('Engagement started! Opening LinkedIn feed...', 'success');
+        } else {
+          showEngagementStatus('Failed to start engagement', 'error');
+          startEngagementButton.disabled = false;
+        }
+      }
+    );
+  });
+
+  // Message listeners for progress updates
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'scrapingProgress') {
       showStatus(message.message, 'processing');
@@ -45,11 +96,24 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (message.action === 'scrapingError') {
       showStatus(`❌ Error: ${message.error}`, 'error');
       startButton.disabled = false;
+    } else if (message.action === 'engagementProgress') {
+      showEngagementStatus(message.message, 'processing');
+    } else if (message.action === 'engagementComplete') {
+      showEngagementStatus(message.message, 'success');
+      startEngagementButton.disabled = false;
+    } else if (message.action === 'engagementError') {
+      showEngagementStatus(`❌ Error: ${message.message}`, 'error');
+      startEngagementButton.disabled = false;
     }
   });
 
   function showStatus(message, type) {
     statusDiv.textContent = message;
     statusDiv.className = `show ${type}`;
+  }
+
+  function showEngagementStatus(message, type) {
+    engagementStatusDiv.textContent = message;
+    engagementStatusDiv.className = `show ${type}`;
   }
 });

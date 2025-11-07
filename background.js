@@ -2,6 +2,8 @@ let urlQueue = [];
 let currentTabId = null;
 let isProcessing = false;
 
+let engagementConfig = null;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'startScraping') {
     urlQueue = [...message.urls];
@@ -10,6 +12,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (message.action === 'profileScraped') {
     handleScrapedData(message.data, sender.tab.id);
+  } else if (message.action === 'startEngagement') {
+    engagementConfig = {
+      likeCount: message.likeCount,
+      commentCount: message.commentCount
+    };
+    startFeedEngagement();
+    sendResponse({ success: true });
+  } else if (message.action === 'engagementComplete') {
+    handleEngagementComplete(sender.tab.id, message.likedCount, message.commentedCount);
+  } else if (message.action === 'engagementProgress') {
+    notifyPopup('engagementProgress', message.message);
+  } else if (message.action === 'engagementError') {
+    notifyPopup('engagementError', message.message);
   }
   return true;
 });
@@ -108,6 +123,61 @@ function notifyPopup(action, message) {
   chrome.runtime.sendMessage({
     action: action,
     message: message,
-    error: action === 'scrapingError' ? message : undefined
+    error: action === 'scrapingError' || action === 'engagementError' ? message : undefined
   }).catch(() => {});
+}
+
+async function startFeedEngagement() {
+  try {
+    console.log('Starting feed engagement with config:', engagementConfig);
+    notifyPopup('engagementProgress', 'Opening LinkedIn feed...');
+
+    const tab = await chrome.tabs.create({ 
+      url: 'https://www.linkedin.com/feed/', 
+      active: true
+    });
+    
+    currentTabId = tab.id;
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    try {
+      // Inject config first, then the script
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (config) => {
+          window.engagementConfig = config;
+        },
+        args: [engagementConfig]
+      });
+
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['feedEngagement.js']
+      });
+
+      console.log('Feed engagement script injected successfully');
+      notifyPopup('engagementProgress', 'Automation started...');
+    } catch (error) {
+      console.error('Error injecting engagement script:', error);
+      notifyPopup('engagementError', 'Failed to inject automation script');
+      chrome.tabs.remove(tab.id);
+    }
+  } catch (error) {
+    console.error('Error opening LinkedIn feed:', error);
+    notifyPopup('engagementError', error.message);
+  }
+}
+
+async function handleEngagementComplete(tabId, likedCount, commentedCount) {
+  console.log(`Engagement completed: ${likedCount} likes, ${commentedCount} comments`);
+  notifyPopup('engagementComplete', `✅ Completed: ${likedCount} likes, ${commentedCount} comments`);
+  
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    title: 'LinkedIn Engagement',
+    message: `Completed: ${likedCount} likes, ${commentedCount} comments`,
+    priority: 2
+  });
 }

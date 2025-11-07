@@ -7,19 +7,45 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <h1>LinkedIn Profile Scraper</h1>
+    <h1>LinkedIn Automation Suite</h1>
     
-    <div class="instructions">
-      <p>Paste LinkedIn profile URLs (one per line):</p>
-    </div>
-    
-    <textarea id="urlInput" placeholder="https://www.linkedin.com/in/username1
+    <!-- Profile Scraping Section -->
+    <section class="section">
+      <h2>Profile Scraper</h2>
+      <div class="instructions">
+        <p>Paste LinkedIn profile URLs (one per line):</p>
+      </div>
+      
+      <textarea id="urlInput" placeholder="https://www.linkedin.com/in/username1
 https://www.linkedin.com/in/username2
-https://www.linkedin.com/in/username3" rows="6"></textarea>
-    
-    <button id="startScraping">Start Scraping</button>
-    
-    <div id="status"></div>
+https://www.linkedin.com/in/username3" rows="4"></textarea>
+      
+      <button id="startScraping">Start Scraping</button>
+      
+      <div id="status"></div>
+    </section>
+
+    <!-- Feed Engagement Section -->
+    <section class="section">
+      <h2>Feed Engagement</h2>
+      <div class="instructions">
+        <p>Automate likes and comments on LinkedIn feed:</p>
+      </div>
+      
+      <div class="input-group">
+        <label for="likeCount">Like Count:</label>
+        <input type="number" id="likeCount" min="0" max="50" placeholder="e.g., 5" />
+      </div>
+      
+      <div class="input-group">
+        <label for="commentCount">Comment Count:</label>
+        <input type="number" id="commentCount" min="0" max="20" placeholder="e.g., 3" />
+      </div>
+      
+      <button id="startEngagement" disabled>Start Engagement</button>
+      
+      <div id="engagementStatus"></div>
+    </section>
     
     <script src="popup.js"></script>
   </body>
